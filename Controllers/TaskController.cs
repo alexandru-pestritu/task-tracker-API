@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Reflection.Metadata.Ecma335;
 using TasksAPI.Models;
+using TasksAPI.Services;
 
 namespace TaskAPI.Controllers
 {
@@ -9,12 +10,12 @@ namespace TaskAPI.Controllers
     public class TaskController : ControllerBase
     {
 
-        static List<TaskModel> _tasks = new List<TaskModel> { new TaskModel { Id = Guid.NewGuid(), Name = "First TaskModel", Description = "First TaskModel Description" , AssignedTo = "Author_1", Status = "To do"},
-        new TaskModel { Id = Guid.NewGuid(), Name = "Second TaskModel", Description = "Second TaskModel Description", AssignedTo = "Author_1", Status = "To do" },
-        new TaskModel { Id = Guid.NewGuid(), Name = "Third TaskModel", Description = "Third TaskModel Description", AssignedTo = "Author_2", Status = "To do"  },
-        new TaskModel { Id = Guid.NewGuid(), Name = "Fourth TaskModel", Description = "Fourth TaskModel Description", AssignedTo = "Author_3", Status = "To do"  },
-        new TaskModel { Id = Guid.NewGuid(), Name = "Fifth TaskModel", Description = "Fifth TaskModel Description", AssignedTo = "Author_4", Status = "To do"  }
-        };
+        private readonly ITaskCollectionService _taskCollectionService;
+
+        public TaskController(ITaskCollectionService taskCollectionService)
+        {
+            _taskCollectionService = taskCollectionService ?? throw new ArgumentNullException(nameof(taskCollectionService));
+        }
 
         /// <summary>
         /// Retrieves all tasks.
@@ -23,7 +24,8 @@ namespace TaskAPI.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(_tasks);
+            List<TaskModel> tasks = _taskCollectionService.GetAll();
+            return Ok(tasks);
         }
 
         /// <summary>
@@ -40,8 +42,7 @@ namespace TaskAPI.Controllers
             {
                 return BadRequest("Task cannot be null");
             }
-            task.Id = Guid.NewGuid(); 
-            _tasks.Add(task);
+            _taskCollectionService.Create(task);
             return Ok(task);
         }
 
@@ -62,18 +63,13 @@ namespace TaskAPI.Controllers
                 return BadRequest("Task cannot be null");
             }
 
-            var existingTask = _tasks.FirstOrDefault(t => t.Id == id);
-            if (existingTask == null)
+            var success = _taskCollectionService.Update(id, task);
+            if (!success)
             {
                 return NotFound();
             }
 
-            existingTask.Name = task.Name;
-            existingTask.Description = task.Description;
-            existingTask.AssignedTo = task.AssignedTo;
-            existingTask.Status = task.Status;
-
-            return Ok(existingTask);
+            return Ok(task);
         }
 
 
@@ -87,14 +83,13 @@ namespace TaskAPI.Controllers
         [HttpDelete("{id:guid}")] 
         public IActionResult Delete(Guid id)
         {
-            var task = _tasks.FirstOrDefault(t => t.Id == id);
-            if (task == null)
+            var success = _taskCollectionService.Delete(id);
+            if (!success)
             {
                 return NotFound();
             }
 
-            _tasks.Remove(task);
-            return Ok(); 
+            return Ok();
         }
     }
 }
