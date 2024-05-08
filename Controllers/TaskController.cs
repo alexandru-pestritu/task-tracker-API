@@ -22,9 +22,9 @@ namespace TaskAPI.Controllers
         /// </summary>
         /// <returns>A list of all tasks.</returns>
         [HttpGet]
-        public IActionResult Get()
+        public async Task<IActionResult> Get()
         {
-            List<TaskModel> tasks = _taskCollectionService.GetAll();
+            List<TaskModel> tasks = await _taskCollectionService.GetAll();
             return Ok(tasks);
         }
 
@@ -36,13 +36,13 @@ namespace TaskAPI.Controllers
         /// <response code="200">Returns the newly created task.</response>
         /// <response code="400">If the task is null.</response>
         [HttpPost]
-        public IActionResult Post([FromBody] TaskModel task)
+        public async Task<IActionResult> Post([FromBody] TaskModel task)
         {
             if (task == null)
             {
                 return BadRequest("Task cannot be null");
             }
-            _taskCollectionService.Create(task);
+            await _taskCollectionService.Create(task);
             return Ok(task);
         }
 
@@ -56,14 +56,14 @@ namespace TaskAPI.Controllers
         /// <response code="400">If the task is null.</response>
         /// <response code="404">If the task with the specified ID is not found.</response>
         [HttpPut("{id:guid}")] 
-        public IActionResult Put(Guid id, [FromBody] TaskModel task)
+        public async Task<IActionResult> Put(Guid id, [FromBody] TaskModel task)
         {
             if (task == null)
             {
                 return BadRequest("Task cannot be null");
             }
 
-            var success = _taskCollectionService.Update(id, task);
+            var success = await _taskCollectionService.Update(id, task);
             if (!success)
             {
                 return NotFound();
@@ -81,9 +81,9 @@ namespace TaskAPI.Controllers
         /// <response code="200">If the task is successfully deleted.</response>
         /// <response code="404">If a task with the specified ID is not found.</response>
         [HttpDelete("{id:guid}")] 
-        public IActionResult Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id)
         {
-            var success = _taskCollectionService.Delete(id);
+            var success = await _taskCollectionService.Delete(id);
             if (!success)
             {
                 return NotFound();
