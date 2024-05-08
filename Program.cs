@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using TasksAPI.Services;
+using TasksAPI.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSingleton<ITaskCollectionService, TaskCollectionService>();
+builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection(nameof(MongoDBSettings)));
+builder.Services.AddSingleton<IMongoDBSettings>(sp => sp.GetRequiredService<IOptions<MongoDBSettings>>().Value);
+
 
 var app = builder.Build();
 
