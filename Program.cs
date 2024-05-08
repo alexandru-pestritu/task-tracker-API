@@ -1,5 +1,6 @@
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using TasksAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,8 @@ builder.Services.AddCors(options =>
                .AllowAnyMethod();
     });
 });
+
+builder.Services.AddSingleton<ITaskCollectionService, TaskCollectionService>();
 
 var app = builder.Build();
 
