@@ -1,65 +1,68 @@
-﻿using TasksAPI.Models;
+﻿using MongoDB.Driver;
+using TasksAPI.Models;
+using TasksAPI.Settings;
 
 namespace TasksAPI.Services
 {
     public class TaskCollectionService : ITaskCollectionService
     {
-        private List<TaskModel> _tasks;
+        private readonly IMongoCollection<TaskModel> _tasks;
 
-        public TaskCollectionService()
+        public TaskCollectionService(IMongoDBSettings settings)
         {
-            _tasks = new List<TaskModel>
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
+
+            _tasks = database.GetCollection<TaskModel>(settings.TasksCollectionName);
+        }
+        public async Task<bool> Create(TaskModel taskModel)
+        {
+            if (taskModel.Id == Guid.Empty)
             {
-                new TaskModel { Id = Guid.NewGuid(), Name = "First TaskModel", Description = "First TaskModel Description", AssignedTo = "Author_1", Status = "To do"},
-                new TaskModel { Id = Guid.NewGuid(), Name = "Second TaskModel", Description = "Second TaskModel Description", AssignedTo = "Author_1", Status = "To do"},
-                new TaskModel { Id = Guid.NewGuid(), Name = "Third TaskModel", Description = "Third TaskModel Description", AssignedTo = "Author_2", Status = "To do"},
-                new TaskModel { Id = Guid.NewGuid(), Name = "Fourth TaskModel", Description = "Fourth TaskModel Description", AssignedTo = "Author_3", Status = "To do"},
-                new TaskModel { Id = Guid.NewGuid(), Name = "Fifth TaskModel", Description = "Fifth TaskModel Description", AssignedTo = "Author_4", Status = "To do"}
-            };
-        }
+                taskModel.Id = Guid.NewGuid();
+            }
 
-        public bool Create(TaskModel model)
-        {
-            model.Id = Guid.NewGuid();
-            _tasks.Add(model);
+            await _tasks.InsertOneAsync(taskModel);
             return true;
         }
 
-        public bool Delete(Guid id)
+        public async Task<bool> Delete(Guid id)
         {
-            var taskToRemove = _tasks.FirstOrDefault(task => task.Id == id);
-            if (taskToRemove == null)
+            var result = await _tasks.DeleteOneAsync(taskModel => taskModel.Id == id);
+            if (!result.IsAcknowledged && result.DeletedCount == 0)
+            {
                 return false;
-
-            _tasks.Remove(taskToRemove);
+            }
             return true;
         }
 
-        public TaskModel Get(Guid id)
+        public async Task<TaskModel> Get(Guid id)
         {
-            return _tasks.FirstOrDefault(task => task.Id == id);
+            return (await _tasks.FindAsync(taskModel => taskModel.Id == id)).FirstOrDefault();
         }
 
-        public List<TaskModel> GetAll()
+        public async Task<List<TaskModel>> GetAll()
         {
-            return _tasks;
+            var result = await _tasks.FindAsync(task => true);
+            return result.ToList();
         }
 
-        public List<TaskModel> GetTasksByStatus(string status)
+        public async Task<List<TaskModel>> GetTasksByStatus(string status)
         {
-            return _tasks.Where(task => task.Status == status).ToList();
+            return (await _tasks.FindAsync(taskModel => taskModel.Status == status)).ToList();
         }
 
-        public bool Update(Guid id, TaskModel model)
+
+        public async Task<bool> Update(Guid id, TaskModel taskModel)
         {
-            var existingTask = _tasks.FirstOrDefault(task => task.Id == id);
-            if (existingTask == null)
+            taskModel.Id = id;
+            var result = await _tasks.ReplaceOneAsync(taskModel => taskModel.Id == id, taskModel);
+            if (!result.IsAcknowledged && result.ModifiedCount == 0)
+            {
+                await _tasks.InsertOneAsync(taskModel);
                 return false;
+            }
 
-            existingTask.Name = model.Name;
-            existingTask.Description = model.Description;
-            existingTask.AssignedTo = model.AssignedTo;
-            existingTask.Status = model.Status;
             return true;
         }
     }

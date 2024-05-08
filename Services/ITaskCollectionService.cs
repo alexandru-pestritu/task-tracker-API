@@ -2,8 +2,13 @@
 
 namespace TasksAPI.Services
 {
-    public interface ITaskCollectionService : ICollectionService<TaskModel>
+    public interface ITaskCollectionService 
     {
-        List<TaskModel> GetTasksByStatus(string status);
+        Task<List<TaskModel>> GetTasksByStatus(string status);
+        Task<List<TaskModel>> GetAll();
+        Task<TaskModel> Get(Guid id);
+        Task<bool> Create(TaskModel model);
+        Task<bool> Update(Guid id, TaskModel model);
+        Task<bool> Delete(Guid id);
     }
 }
