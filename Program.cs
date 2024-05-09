@@ -28,11 +28,14 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.AllowAnyOrigin()
-               .AllowAnyHeader()
-               .AllowAnyMethod();
+        builder
+            .WithOrigins("http://localhost:4200")
+            .AllowCredentials()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
     });
 });
+builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<ITaskCollectionService, TaskCollectionService>();
 builder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection(nameof(MongoDBSettings)));
@@ -55,5 +58,16 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.UseCors();
+
+app.UseWebSockets(new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.Zero,
+});
+app.UseRouting();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHub<NotificationsHub>("/hub/notifications");
+});
+
 
 app.Run();
